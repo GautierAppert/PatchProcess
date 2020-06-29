@@ -1,0 +1,4 @@
+useDynLib(PatchProcess34)
+# exportPattern("^[[:alpha:]]+")
+export(PatchProcessWidget)
+importFrom(Rcpp, evalCpp)

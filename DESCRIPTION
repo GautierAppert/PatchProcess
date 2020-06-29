@@ -1,0 +1,15 @@
+Package: PatchProcess34
+Type: Package
+Title: What the Package Does in One 'Title Case' Line
+Version: 1.0
+Date: 2018-10-25
+Author: Your Name
+Maintainer: Your Name <your@email.com>
+Depends: jpeg, gtools, gWidgets2, Rcpp
+Description: One paragraph description of what the package does as one
+        or more full sentences.
+License: GPL (>= 2)
+Imports: Rcpp (>= 0.12.5)
+LinkingTo: Rcpp
+NeedsCompilation: yes
+Packaged: 2020-06-13 18:50:00 UTC; root

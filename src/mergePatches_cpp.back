@@ -1,0 +1,873 @@
+#include "initialization.h" 
+
+// [[Rcpp::export]]
+
+void combineLabels(
+	IntegerVector &Swx, 
+	IntegerVector &Qwx, 
+	IntegerVector &Rwx, 
+	int height, int width) 
+{
+	int i,j;
+
+	#pragma omp parallel for private(i,j)
+	for (i=0;i<width;++i)
+	{
+		for (j=0;j<height;++j)
+		{
+			Swx[j+height*i] = Qwx[Rwx[j+height*i]+height*i];
+		}
+	}
+}
+
+// [[Rcpp::export]]
+
+void computeNewPatches(
+	NumericVector &Pgu,
+	IntegerVector &Uwx,
+	NumericVector &Pxu,
+	NumericVector &Ptg,
+	IntegerVector &Gtw,
+	IntegerVector &Gwx,
+	NumericVector &Pgx,
+	IntegerVector &Txw,
+	NumericVector &Pxw,
+	NumericVector &w,
+	NumericVector &A,
+	NumericVector &B,
+	IntegerVector &pair_1,
+	IntegerVector &pair_2,
+	List &paramList)
+{
+	int i;
+
+	syntaxParam parameters(Pgu,Uwx,Pxu,Ptg,Gtw,Gwx,Pgx,Txw,Pxw,w,A,B,pair_1,pair_2,paramList);
+	parameters.initPgu();
+
+	for (i=parameters.firstKvalue-1; i<parameters.lastKvalue; ++i) 
+	{ 
+		parameters.split(i,parameters.Pgu,parameters.number_of_parts,parameters.lastKvalue, parameters.n);
+		Rcout << "Syntax patch " << (i+1-parameters.shift) << " computed !\n";
+		Rcout << "at step number " << i+1 << "\n";
+	}
+	parameters.computeUwx();
+}
+
+void syntaxParam::computeUwx(void)
+{
+	int i,j,k,buf;
+	int *Ugx;
+	Ugx = new int[number_of_parts*n];
+
+	for (i=0;i<number_of_parts*n;++i)
+	{
+		Ugx[i] = 0;
+	}
+
+	Rcout << "Entering into computeUwx !\n";
+	#pragma omp parallel for private(i,j,k)
+	for (i=0;i<number_of_parts;++i)
+	{
+		for (j=0;j<lastKvalue;++j)
+		{
+			if (Pgu[i+number_of_parts*j]>0) {
+				for (k=0;k<n;++k)
+				{
+					if (B[k+n*j]>0) {
+						Ugx[i+number_of_parts*k] = j;
+					}
+				}
+			}
+		}
+	}
+
+	Rcout << "Second loop begins now !\n";
+
+	// #pragma omp parallel for private(i,j,k)
+	for (i=0;i<n;++i)
+	{
+		for (j=0;j<number_of_patches;++j)
+		{
+			if (Pxw[i+n*j]>0) {
+				k = Ugx[Gwx[j+number_of_patches*i]+ number_of_parts*i];
+				Uwx[j+number_of_patches*i] = k; 
+				Pxu[i+n*k] += Pxw[i+n*j];
+			}
+		}
+	}
+	Rcout << "Leaving computeUwx !\n";
+	delete[] Ugx;
+	Rcout << "Ugx deleted !\n";
+}
+
+void syntaxParam::initPgu(void) 
+{
+	int i, j;
+
+	#pragma omp parallel for private(i,j)
+	for (j=0;j<n;++j)
+	{
+		B[j+n*j] = 1;
+		Crit[j] = 0;
+		for (i=0;i<number_of_parts;++i)
+		{
+			Crit[j] += Pgu[i+number_of_parts*j];
+		}
+	}
+}
+
+// [[Rcpp::export]]
+
+void computeSyntax(
+	NumericVector &Pgu,
+	IntegerVector &Uwx,
+	NumericVector &Pxu,
+	NumericVector &Ptg,
+	IntegerVector &Gtw,
+	IntegerVector &Gwx,
+	NumericVector &Pgx,
+	IntegerVector &Txw,
+	NumericVector &Pxw,
+	NumericVector &w,
+	NumericVector &A,
+	NumericVector &B,
+	IntegerVector &pair_1,
+	IntegerVector &pair_2,
+	List &paramList)
+{
+	int i;
+
+	syntaxParam parameters(Pgu,Uwx,Pxu,Ptg,Gtw,Gwx,Pgx,Txw,Pxw,w,A,B,pair_1,pair_2,paramList);
+
+	parameters.initPtg();
+
+	for (i=parameters.firstKvalue-1; i<parameters.lastKvalue; ++i) 
+	{ 
+		parameters.split(i,parameters.Ptg,parameters.number_of_patches,parameters.number_of_parts, parameters.number_of_patches);
+		Rcout << "Syntax label " << (i+1 - parameters.shift) << " computed !\n";
+		Rcout << "Syntax iteration number" << i+1 << "\n";
+	}
+	parameters.computeGtw();
+	parameters.computePgx();
+}
+
+void syntaxParam::computePgx(void) {
+	int i, j;
+	#pragma omp parallel for private(i, j)
+	for (i=0;i<n;++i)
+	{
+		for (j=0;j<number_of_patches;++j)
+		{
+			if (Pxw[i+n*j]>0) {
+				Pgx[Gtw[Txw[i+n*j]+number_of_patches*j]+lastKvalue*i] += Pxw[i+n*j];
+				Gwx[j+number_of_patches*i] = Gtw[Txw[i+n*j]+number_of_patches*j];
+			}
+		}
+	}
+}
+
+void syntaxParam::computeGtw(void) {
+	int i,j,k;
+	#pragma omp parallel for private(i,j,k)
+	for (i=0;i<number_of_patches;++i)
+	{
+		for (j=0;j<lastKvalue;++j)
+		{
+			if (Ptg[i+number_of_patches*j]>0) {
+				for (k=0;k<number_of_patches;++k)
+				{
+					if (B[k+number_of_patches*j]>0) {
+						Gtw[i+number_of_patches*k] = j;
+					}
+				}
+			}
+		}
+	}
+}
+
+void syntaxParam::initPtg(void) 
+{ 
+	int i, j;
+/*
+	#pragma omp parallel for 
+	for (i=0; i<number_of_patches; ++i)
+	{
+		Crit[i] = 0;
+	}
+*/
+
+	#pragma omp parallel for private(i,j)
+	for (i=0;i<n;++i)
+	{
+		for (j=0;j<number_of_patches;++j)
+		{
+			if (A[i+n*j]>0) {
+				Ptg[j+number_of_patches*j] += w[j];
+				Txw[i+n*j] = j;
+			}
+		}
+		for (j=number_of_patches;j<number_of_patches+number_of_pairs;++j)
+		{
+			if (A[i+n*j]>0) { 
+				if (pair_1[j-number_of_patches] != pair_2[j-number_of_patches]) {
+					Ptg[pair_1[j-number_of_patches]+number_of_patches*
+						pair_2[j-number_of_patches]] += w[pair_2[j-number_of_patches]];
+					Ptg[pair_2[j-number_of_patches]+number_of_patches*
+						pair_1[j-number_of_patches]] += w[pair_1[j-number_of_patches]];
+					Txw[i+n*pair_1[j-number_of_patches]] = pair_2[j-number_of_patches];
+					Txw[i+n*pair_2[j-number_of_patches]] = pair_1[j-number_of_patches];
+				} else {
+					Ptg[pair_1[j-number_of_patches]+number_of_patches*pair_1[j
+						-number_of_patches]] += w[j];
+					Txw[i+n*pair_1[j-number_of_patches]] = pair_1[j-number_of_patches];
+				}
+			}
+		}
+	}
+
+	#pragma omp parallel for
+	for (j=0;j<number_of_patches;++j)
+	{
+		B[j+number_of_patches*j] = 1;
+	}
+	/*
+	#pragma omp parallel for
+	for (i = 0; i< number_of_pairs; ++i) { 
+		P[pair_1[i]+ number_of_patches*pair_2[i]] = 1;
+		P[pair_2[i]+ number_of_patches*pair_1[i]] = 1;
+		B[pair_1[i]+ number_of_patches*pair_2[i]] = 1;
+		B[pair_2[i]+ number_of_patches*pair_1[i]] = 1;
+	}
+	Rcout << "n = " << n << "\n";
+	#pragma omp parallel for private(i,j) 
+	for (i=0; i< number_of_patches; ++i) { 
+		for (j=0; j < n; ++j) { 
+			if (A[j+n*i] > 0) { 
+				P[i + number_of_patches*i] = 1;
+				B[i + number_of_patches*i] = 1;
+			}
+		}
+	}
+	*/
+
+	#pragma omp parallel for private(i,j)
+	for (j=0; j < number_of_patches; ++j) { 
+		Crit[j] = 0;
+		for (i=0; i < number_of_patches; ++i) { 
+			Crit[j] += Ptg[i+number_of_patches*j];
+		} 
+	} 
+/*
+	for (i = 0; i< number_of_pairs; ++i) { 
+		P[pair_1[i]+ number_of_patches*pair_2[i]] += w[i + number_of_patches];
+		P[pair_2[i]+ number_of_patches*pair_1[i]] += w[i + number_of_patches];
+		Crit[pair_2[i]] += w[i + number_of_patches];
+		Crit[pair_1[i]] += w[i + number_of_patches];
+	}
+*/
+}
+
+void syntaxParam::split(int iter, double *P, int height, int width, int initial_width)
+{
+	// Rcout << "Entering into syntaxParam::merge !\n";
+  
+  
+  int i, j;
+  double crit, max_crit, Citer, Cmax_i, Cmax_j;
+  int max_i, max_j;
+  max_crit = 0;
+  
+   ///////////////////////////////////////////
+  //   GET max_i according to the weight   //
+ ///////////////////////////////////////////
+  
+  
+  #pragma omp parallel private(i)
+	{
+		double my_max_crit=0;
+    int my_max_i;
+    
+		#pragma omp for 
+		for (i=0; i < iter-shift; ++i) 
+		{
+			if (my_max_crit < Crit[i]) { 
+				my_max_crit = Crit[i];
+				my_max_i = i;
+			}
+		}
+   
+    
+		#pragma omp critical
+		{
+			if (max_crit < my_max_crit) { 
+				max_crit = my_max_crit;
+				max_i = my_max_i;
+			}
+		}
+  
+  }
+	// display the max of P_{W,W}(A_i x C_i)
+	Rcout << "max_i = " << max_i + 1 << "\n";
+    
+  
+    //////////////////////////////////////////////////////////
+   //  GET max_j  according to the weight and intersection //
+  //////////////////////////////////////////////////////////
+  
+    
+	max_crit = 0;
+	#pragma omp parallel private(j, crit, i) 
+	{
+		double my_max_crit = 0;
+		int my_max_j;
+		#pragma omp for
+		for (j=0; j < iter-shift; ++j) 
+		{
+			// j!= max_i.
+			if (j == max_i) { 
+				continue;
+			}
+			crit = 0;
+			for (i=0; i<height; ++i)
+			{
+				if ( P[i+height*max_i]*P[i+height*j] > 0 ) { 
+					crit += P[i+height*max_i] + P[i+height*j]; 
+				}
+			}
+			if (my_max_crit < crit) { 
+				my_max_crit = crit;
+				my_max_j = j;
+			}
+		}
+		#pragma omp critical
+		{
+			if (max_crit < my_max_crit) { 
+				max_crit = my_max_crit;
+				max_j = my_max_j;
+			}
+		}
+	}
+
+	if (max_crit == 0) { 
+		#pragma omp parallel for
+		for (i=0;i<height;++i)
+		{
+			P[i+height*(width-shift-1)] =
+				P[i+height*max_i]; 
+			P[i+height*max_i] = 0; 
+		}
+		Crit[width-shift-1] = Crit[max_i];
+		Crit[max_i] = 0;
+		#pragma omp parallel for
+		for (i=0;i<initial_width;++i) {
+			B[i+initial_width*(width-shift-1)] =
+				B[i+initial_width*max_i]; 
+		}
+		Rcout << "Syntax label " << max_i + 1 << " was moved to " 
+			<< width - shift << "\n";
+		++shift;
+		return;
+	}
+
+	// display max_j on the consol.
+	Rcout << "max_j = " << max_j + 1 << "\n";
+		
+	Cmax_i = Cmax_j = Citer = 0;
+	#pragma omp parallel for private(i) reduction(+:Citer,Cmax_i,Cmax_j)
+	for (i=0; i<height; ++i)
+	{
+		// intersection between P_max_i and P_max_j
+		if ( P[i+height*max_i]*P[i+height*max_j] > 0 ) { 
+		// Put in iter column : W_max_i + W_max_j
+			P[i+height*(iter-shift)] = P[i+height*max_i] 
+				+ P[i+height*max_j]; 
+			Citer += P[i+height*max_i] + P[i+height*max_j];
+                  
+			P[i+height*max_i] = 0; 
+			P[i+height*max_j] = 0;
+			// Citer += w[max_i] + w[max_j];
+		}
+		if ( P[i+height*max_i] > 0 ) {
+		// Cmax_i += w[max_i];
+			Cmax_i += P[i+height*max_i];
+		}
+		if ( P[i+height*max_j] > 0 ) {
+		// Cmax_j += w[max_j];
+			Cmax_j += P[i+height*max_j]; 
+		}
+	}
+           //////////////////////////////
+          // Update the criterion.    //
+         //////////////////////////////
+             
+	Crit[iter-shift] = Citer;
+	Crit[max_i] = Cmax_i;
+	Crit[max_j] = Cmax_j;
+              
+        
+         //////////////////////////////////////
+        //       Update matrix B             //
+       ////////////////////////////////////////
+      
+	// merge max_i and max_j.
+	#pragma omp parallel for 
+	for (i=0; i<initial_width; ++i) // computes patch number iter  
+	{
+		// UNION between B_max_i and B_max_j
+		B[i+initial_width*(iter-shift)] = B[i+initial_width*max_i] 
+			+ B[i+initial_width*max_j];
+	}
+        
+	return;
+}
+
+
+void syntaxParam::split(int iter) 
+{ 
+	// Rcout << "Entering into syntaxParam::merge !\n";
+  
+  
+  int i, j;
+  double crit, max_crit, Citer, Cmax_i, Cmax_j;
+  int max_i, max_j;
+  max_crit = 0;
+  
+   ///////////////////////////////////////////
+  //   GET max_i according to the weight   //
+ ///////////////////////////////////////////
+  
+  
+  #pragma omp parallel private(i)
+	{
+		double my_max_crit=0;
+    int my_max_i;
+    
+		#pragma omp for 
+		for (i=0; i < iter-shift; ++i) 
+		{
+			if (my_max_crit < Crit[i]) { 
+				my_max_crit = Crit[i];
+				my_max_i = i;
+			}
+		}
+   
+    
+		#pragma omp critical
+		{
+			if (max_crit < my_max_crit) { 
+				max_crit = my_max_crit;
+				max_i = my_max_i;
+			}
+		}
+  
+  }
+	// display the max of P_{W,W}(A_i x C_i)
+	Rcout << "max_i = " << max_i + 1 << "\n";
+    
+  
+    //////////////////////////////////////////////////////////
+   //  GET max_j  according to the weight and intersection //
+  //////////////////////////////////////////////////////////
+  
+    
+	max_crit = 0;
+	#pragma omp parallel private(j, crit, i) 
+	{
+		double my_max_crit = 0;
+		int my_max_j;
+		#pragma omp for
+		for (j=0; j < iter-shift; ++j) 
+		{
+			// j!= max_i.
+			if (j == max_i) { 
+				continue;
+			}
+			crit = 0;
+			for (i=0; i<number_of_patches; ++i)
+			{
+				if ( Ptg[i+number_of_patches*max_i]*Ptg[i+number_of_patches*j] > 0 ) { 
+					crit += Ptg[i+number_of_patches*max_i] + Ptg[i+number_of_patches*j]; 
+				}
+			}
+			if (my_max_crit < crit) { 
+				my_max_crit = crit;
+				my_max_j = j;
+			}
+		}
+		#pragma omp critical
+		{
+			if (max_crit < my_max_crit) { 
+				max_crit = my_max_crit;
+				max_j = my_max_j;
+			}
+		}
+	}
+
+	if (max_crit == 0) { 
+		for (i=0;i<number_of_patches;++i)
+		{
+			Ptg[i+number_of_patches*(lastKvalue-shift-1)] =
+				Ptg[i+number_of_patches*max_i]; 
+			Crit[lastKvalue-shift-1] = Crit[max_i];
+			Crit[max_i] = 0;
+			Ptg[i+number_of_patches*max_i] = 0; 
+			B[i+number_of_patches*(lastKvalue-shift-1)] =
+				B[i+number_of_patches*max_i]; 
+		}
+		Rcout << "Syntax label " << max_i + 1 << " was moved to " 
+			<< lastKvalue - shift << "\n";
+		++shift;
+		return;
+	}
+
+	// display max_j on the consol.
+	Rcout << "max_j = " << max_j + 1 << "\n";
+		
+	// return 0;
+	// keep the indexes max_i and max_j.
+	//  pair_1[iter - lastKvalue + number_of_pairs] = max_i + 1;
+	//  pair_2[iter - lastKvalue + number_of_pairs] = max_j + 1;
+              
+              
+  /////////////////////////////////
+ 	//   Update matrix P_{W,W}     //
+	/////////////////////////////////
+              
+	Cmax_i = Cmax_j = Citer = 0;
+	#pragma omp parallel for private(i) reduction(+:Citer,Cmax_i,Cmax_j)
+	for (i=0; i<number_of_patches; ++i)
+	{
+		// intersection between P_max_i and P_max_j
+		if ( Ptg[i+number_of_patches*max_i]*Ptg[i+number_of_patches*max_j] > 0 ) { 
+		// Put in iter column : W_max_i + W_max_j
+			Ptg[i+number_of_patches*(iter-shift)] = Ptg[i+number_of_patches*max_i] 
+				+ Ptg[i+number_of_patches*max_j]; 
+			Citer += Ptg[i+number_of_patches*max_i] + Ptg[i+number_of_patches*max_j];
+                  
+			Ptg[i+number_of_patches*max_i] = 0; 
+			Ptg[i+number_of_patches*max_j] = 0;
+			// Citer += w[max_i] + w[max_j];
+		}
+		if ( Ptg[i+number_of_patches*max_i] > 0 ) {
+		// Cmax_i += w[max_i];
+			Cmax_i += Ptg[i+number_of_patches*max_i];
+		}
+		if ( Ptg[i+number_of_patches*max_j] > 0 ) {
+		// Cmax_j += w[max_j];
+			Cmax_j += Ptg[i+number_of_patches*max_j]; 
+		}
+	}
+           //////////////////////////////
+          // Update the criterion.    //
+         //////////////////////////////
+             
+	Crit[iter-shift] = Citer;
+	Crit[max_i] = Cmax_i;
+	Crit[max_j] = Cmax_j;
+              
+        
+         //////////////////////////////////////
+        //       Update matrix B             //
+       ////////////////////////////////////////
+      
+	// merge max_i and max_j.
+	#pragma omp parallel for 
+	for (i=0; i<number_of_patches; ++i) // computes patch number iter  
+	{
+		// UNION between B_max_i and B_max_j
+		B[i+number_of_patches*(iter-shift)] = B[i+number_of_patches*max_i] 
+			+ B[i+number_of_patches*max_j];
+	}
+        
+	return;
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+
+             ////////////////////////////////////
+            ////////////////////////////////////
+           ////      COMPUTE MERGE          ///
+          ////////////////////////////////////
+         ////////////////////////////////////
+
+
+         
+         
+
+         
+// [[Rcpp::export]]
+
+void computeMerge( 
+	NumericVector &w,
+	NumericVector &C,
+	NumericVector &A, // NumericVector &B,
+	IntegerVector &pair_1,
+	IntegerVector &pair_2,
+	NumericVector &Pxw,
+	IntegerVector &Mwx,
+	List &paramList)
+{
+	int i;
+	mergeParam parameters(w, C, A, // B, 
+		pair_1, pair_2, Pxw, Mwx, paramList); 
+		Rcout << "calling setA.\n";
+		parameters.setA();
+	for (i=parameters.firstKvalue-1; i< parameters.lastKvalue; ++i)
+	{
+		parameters.merge(i);
+/*
+		if (parameters.merge(i)) { 
+			Rcout << "Nothing more to be merged !\n";
+			Rcout << "Last patch index = " << i << "\n";
+			break;
+		}
+*/
+		Rcout << "Merged patch number " << i+1 << " computed \n";
+	}
+	parameters.output();
+}
+
+void mergeParam::output(void) 
+{
+	int i,j;
+	
+	#pragma omp parallel for private(i,j)
+	for (i=0;i<n;++i)
+	{ 
+		for (j=0;j<number_of_patches;++j)
+		{
+			if (A[i+n*j]>0) { 
+				Mwx[j+number_of_patches*i] = j;	
+			}
+		}
+		for (j=number_of_patches;j<lastKvalue;++j)
+		{
+			if (A[i+n*j]>0) { 
+				Mwx[pair_1[j-number_of_patches]+number_of_patches*i] 
+					= j;
+				Mwx[pair_2[j-number_of_patches]+number_of_patches*i] 
+					= j; 
+			}
+		}
+	}
+}
+
+
+// Construct the matrix P_{X,W}
+void mergeParam::setA(void) 
+{
+	int i, j;
+	// int errors;
+	// double weight;
+	// errors = 0;
+
+	// #pragma omp parallel for private(i,j, weight) 
+	#pragma omp parallel for private(i,j) 
+	// reduction(+:errors)
+	// j is less or equal to n
+	for (j=0; j<number_of_patches; ++j) 
+	// number_of_patches == current_number_of_patches in the R script
+	{
+		// weight = 0;
+	  
+	  // compute the surface of the patches |B_j|.
+		/*
+		for (i=0; i< d; ++i) {
+			weight += B[i+d*j]; // weight += *(B+i+d*j);
+		}
+		
+		if (w[j] != weight) { 
+			++errors;
+		} 
+		// w[j] = weight; // |B_j|.
+		*/
+		C[j] = 0;
+		for (i=0; i<n; ++i) { 
+			// if (A[i+n*j]>0) {
+			if (Pxw[i+n*j]>0) {
+				// A[i+n*j] = weight;
+				// C[j] += weight;
+				A[i+n*j] = Pxw[i+n*j];
+				C[j] += Pxw[i+n*j];
+			}
+		}
+	} 
+	// Rcout << "errors = " << errors << "\n";
+	
+	/*
+	errors = 0;
+	#pragma omp parallel for private(i,j) reduction(+:errors)
+	for (j=0; j<firstKvalue-1; ++j)
+	{
+		for (i=0; i<n; ++i)
+		{
+			if (A[i+n*j] != Pxw[i+n*j]) {
+				++errors;
+			}	
+		}
+	}
+	Rcout << "Asets[i,j] != Pxw[i,j] = " << errors << "\n";
+	*/
+}
+
+
+// begin the merge !!
+void mergeParam::merge(int iter) 
+{
+	int i, j;
+	double crit, max_crit, Citer, Cmax_i, Cmax_j;
+	int max_i, max_j;
+	max_crit = 0;
+	
+	// first, we look for the max_i.
+	#pragma omp parallel private(i)
+	{
+		double my_max_crit=0;
+		int my_max_i;
+		#pragma omp for 
+		// for (i=0; i<iter; ++i) 
+		// for (i=0; i<firstKvalue-1; ++i) // we merge only pairs
+		for (i=0; i<lastKvalue-number_of_pairs; ++i) // we merge only pairs
+		{
+			// if ((w[i] < d) && (my_max_crit < C[i]/w[i])) // We select 
+			// the most frequent patch, independently of its size. 
+			if ((w[i] < d) && (my_max_crit < C[i])) { // entropy criterion 
+				my_max_crit = C[i];
+				my_max_i = i;
+			}
+		} 	
+		
+		// loop through all cpus to get max_i.
+		#pragma omp critical
+		{
+			if (max_crit < my_max_crit) { 
+				max_crit = my_max_crit;
+				max_i = my_max_i;
+			}
+		}
+	}
+
+	if (max_crit == 0) { 
+		Rcout << "max_crit == 0 for max_i !\n";
+		return;
+	} 
+	
+	// we recover the max of P_{X,W}(A_ixC_i)
+	Rcout << "max_i = " << max_i + 1 << "\n";
+
+	max_crit = 0;
+	#pragma omp parallel private(j, crit, i) 
+	{
+		double my_max_crit = 0;
+		int my_max_j;
+		#pragma omp for
+		// for (j=0; j<iter; ++j)
+		for (j=0; j<number_of_patches; ++j) 
+		// We merge only pairs of original patches.
+		{
+		  
+		  // j!= max_i.
+			if (j == max_i) { 
+				continue;
+			}
+			crit = 0;
+			for (i=0; i<n; ++i)
+			{
+				if ( A[i+n*max_i]*A[i+n*j] > 0 ) { 
+					crit += w[max_i] + w[j]; 
+					// crit += 1; 	// We select the most frequent merge, 
+											// independently of its size. 
+				}
+			}
+			if (my_max_crit < crit) { 
+				my_max_crit = crit;
+				my_max_j = j;
+			}
+		}
+		#pragma omp critical
+		{
+			if (max_crit < my_max_crit) { 
+				max_crit = my_max_crit;
+				max_j = my_max_j;
+			}
+		}
+	}
+	
+	if (max_crit == 0) { 
+		#pragma omp parallel for
+		for (i=0;i<n;++i)
+		{
+			A[i+n*iter] = A[i+n*max_i]; 
+			A[i+n*max_i] = 0;
+		}
+		pair_1[iter-number_of_patches] = pair_2[iter-number_of_patches] = max_i;
+		C[iter] = C[max_i];
+		C[max_i] = 0;
+		w[iter] = w[max_i];
+		return;
+	}
+	Rcout << "max_j = " << max_j + 1 << "\n";
+	
+	
+	// keep the indexes max_i and max_j.
+	pair_1[iter - number_of_patches] = max_i;
+	pair_2[iter - number_of_patches] = max_j;
+	
+	
+	// compute the weight for the pair.
+	w[iter] = w[max_i] + w[max_j];
+//	C[iter] = max_crit;
+	
+	
+	
+	
+	
+	 /////////////////////////////////
+	//////   UPDATE A AND B   ///////
+ /////////////////////////////////	
+	
+	
+	
+	Cmax_i = Cmax_j = Citer = 0;
+	#pragma omp parallel for private(i) reduction(+:Citer,Cmax_i,Cmax_j)
+	for (i=0; i<n; ++i)
+	{
+	  
+	  // intersection between A_max_i and A_max_j
+		if ( A[i+n*max_i]*A[i+n*max_j] > 0 ) { 
+		  
+		  // put in iter column : |B_max_i| + |B_max_j|.
+			A[i+n*iter] = w[max_i] + w[max_j]; 
+			A[i+n*max_i] = 0; 
+			A[i+n*max_j] = 0;
+			Citer += w[max_i] + w[max_j];
+		}
+		if ( A[i+n*max_i] > 0 ) {
+			Cmax_i += w[max_i];
+		}
+		if ( A[i+n*max_j] > 0 ) {
+			Cmax_j += w[max_j];
+		}
+	}
+	
+	
+	// update the criterion.
+	C[iter] = Citer;
+	C[max_i] = Cmax_i;
+	C[max_j] = Cmax_j;
+	
+	
+	/*
+	#pragma omp parallel for private(i)
+	for (i=0; i<d; ++i)
+	{
+		B[i+d*iter] = B[i+d*max_i] + B[i+d*max_j];
+		if (B[i+d*max_i]>0) { 
+			m[i+d*iter] = m[i+d*max_i];
+		} else if (B[i+d*max_j]>0) { 
+			m[i+d*iter] = m[i+d*max_j];
+		}
+	}
+	*/
+	return;
+}

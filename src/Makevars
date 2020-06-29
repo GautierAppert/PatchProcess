@@ -1,0 +1,14 @@
+PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS) -O3
+PKG_LIBS = $(SHLIB_OPENMP_CFLAGS) $(FLIBS) -O3 -lstdc++
+
+CXX_OBJS = RcppExports.o initialization.o mergePatches.o 
+
+OBJECTS = $(CXX_OBJS)
+
+all: $(SHLIB)
+$(SHLIB): $(OBJECTS)
+
+
+clean:
+	@rm -rf $(SHLIB) $(OBJECTS)
+

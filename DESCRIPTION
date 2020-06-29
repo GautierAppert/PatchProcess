@@ -8,6 +8,7 @@ Maintainer: gautier.appert.chess@gmail.com
 Depends: jpeg, gtools, gWidgets2, Rcpp
 Description: 
 
+
 License: GPL (>= 2)
 Imports: Rcpp (>= 0.12.5)
 LinkingTo: Rcpp

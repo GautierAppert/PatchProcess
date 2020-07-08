@@ -1,30 +1,32 @@
-\name{PatchProcess34-package}
-\alias{PatchProcess34-package}
-\alias{PatchProcess34}
+\name{PatchProcess}
+\alias{PatchProcess}
+\alias{PatchProcess}
 \docType{package}
 \title{
-  A short title line describing what the package does
+Application with a graphical user interface to perform 
+Fragmention algorithm and Syntax analysis on digital images.
 }
 \description{
-  A more detailed description of what the package does. A length
-  of about one to five lines is recommended.
+The package provides a set of tools to perform unsupervised classification on images, namely
+fragmentation and syntax algorithm.
 }
 \details{
-  This section should provide a more detailed overview of how to use the
-  package, including the most important functions.
+  The overall application takes jpg images as inputs converted on a greyscale as input.
 }
 \author{
-Your Name, email optional.
+Olivier Catoni
+and Gautier Appert
 
-Maintainer: Your Name <your@email.com>
+gautier.appert.chess@gmail.com
 }
 \references{
-  This optional section can contain literature or other references for
-  background information.
+  InformationInformation k-means, fragmentation and syntax analysis:
+A new approach to unsupervised Machine Learning.
+Phd thesis 2020.
 }
-\keyword{ package }
+\keyword{Fragmentation, Syntax, Patches, Labels }
 \seealso{
-  Optional links to other man pages
+
 }
 \examples{
   \dontrun{

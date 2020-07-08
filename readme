@@ -8,3 +8,12 @@ Rcpp.package.skeleton("PatchProcess", code_files = "PatchProcess.R")
 To launch the application, just run the R script in your console
 ./PatchProcess/tests/test.R
 
+
+===============
+
+Olivier Catoni and Gautier Appert.
+
+
+
+
+

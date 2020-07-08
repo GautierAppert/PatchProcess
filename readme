@@ -17,6 +17,7 @@ Rcpp.package.skeleton("PatchProcess", code_files = "PatchProcess.R")
 ./PatchProcess/tests/test.R
 
 
+
 ===============
 
 <sup>*Olivier Catoni and Gautier Appert*

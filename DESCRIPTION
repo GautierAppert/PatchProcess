@@ -4,11 +4,9 @@ Title: Fragmentation and syntax analysis on digital images.
 Version: 1.0
 Date: 2018-10-25
 Author: Olivier Catoni and Gautier Appert
-Maintainer: gautier.appert.chess@gmail.com
+Maintainer: Olivier Catoni and Gautier Appert <your@email.com>
 Depends: jpeg, gtools, gWidgets2, Rcpp
 Description: 
-
-
 License: GNU LESSER GENERAL PUBLIC LICENSE
 Imports: Rcpp (>= 0.12.5)
 LinkingTo: Rcpp

@@ -14,10 +14,9 @@ fragmentation and syntax algorithm.
   The overall application takes jpg images as inputs converted on a greyscale as input.
 }
 \author{
-Olivier Catoni
-and Gautier Appert
+Olivier Catoni, Gautier Appert
 
-gautier.appert.chess@gmail.com
+Maintainer: Olivier Catoni, Gautier Appert
 }
 \references{
   InformationInformation k-means, fragmentation and syntax analysis:

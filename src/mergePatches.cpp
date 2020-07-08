@@ -1,3 +1,10 @@
+//****************************************************//
+//         Olivier Catoni & Gautier Appert           //
+//         GNU LESSER GENERAL PUBLIC LICENSE        // 
+//*************************************************//
+
+
+
 #include "initialization.h" 
 
 

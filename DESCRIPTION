@@ -9,7 +9,7 @@ Depends: jpeg, gtools, gWidgets2, Rcpp
 Description: 
 
 
-License: GPL (>= 2)
+License: GNU LESSER GENERAL PUBLIC LICENSE
 Imports: Rcpp (>= 0.12.5)
 LinkingTo: Rcpp
 NeedsCompilation: yes

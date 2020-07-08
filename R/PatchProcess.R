@@ -1,3 +1,9 @@
+#####################################################
+#         Olivier Catoni & Gautier Appert           #
+#         GNU LESSER GENERAL PUBLIC LICENSE         # 
+#####################################################
+
+
 # require(tiff)
 # require(jpeg)
 # require(gtools)

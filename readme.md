@@ -3,8 +3,14 @@
 
 # Information Fragmentation and Syntax Analysis
 
+<br>
+<p align="center">
+  <img height="350" src="Screenshot.png">
+</p>
 
 * This repository provides an R package called **PatchProcess** to perform **Fragmentation** and **Syntax analysis** on digital (jpg) images.
+
+## Installation
  
 * To (re)compile, run in directory package <br/>
 

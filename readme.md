@@ -25,7 +25,7 @@ Rcpp.package.skeleton("PatchProcess", code_files = "PatchProcess.R")
 
 ## License
 
-[![License: LGPL v3](https://img.shields.io/badge/License-LGPL%20v3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
+[![License: LGPLv2.1](https://img.shields.io/badge/license-LGPL%20v2.1-blue.svg)](https://www.gnu.org/licenses/lgpl-2.1.html)
 
 
 ## Disclaimer

@@ -7,7 +7,7 @@
 * This repository provides an R package to perform **Fragmentation** and **Syntax analysis** on digital (jpg) images.
  
 * To (re)compile, run in directory package
-R CMD build PatchProcess
+R CMD build PatchProcess <br/>
 R CMD INSTALL PatchProcess
 
 * The package was created using the following command

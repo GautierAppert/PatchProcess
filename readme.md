@@ -13,9 +13,6 @@ R CMD build PatchProcess
 R CMD INSTALL PatchProcess
 ```
 
-* The package was created using the following command <br/>
-Rcpp.package.skeleton("PatchProcess", code_files = "PatchProcess.R")
-
 * To launch the application, just run the R script in your console <br/>
 
 ```bash
@@ -23,14 +20,15 @@ Rcpp.package.skeleton("PatchProcess", code_files = "PatchProcess.R")
 ```
 
 
+* The package along with the files architecture were created using the following command <br/>
+```bash
+Rcpp.package.skeleton("PatchProcess", code_files = "PatchProcess.R")
+```
+
 ## License
 
 [![License: LGPLv2.1](https://img.shields.io/badge/license-LGPL%20v2.1-blue.svg)](https://www.gnu.org/licenses/lgpl-2.1.html)
 
-
-## Disclaimer
-
-If you plan to use this package on copyrighted material, make sure you get proper authorization from right owners beforehand.
 
 
 ===============

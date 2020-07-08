@@ -3,12 +3,14 @@
 
 # Information Fragmentation and Syntax Analysis
 
+* This repository provides an R package called **PatchProcess** to perform **Fragmentation** and **Syntax analysis** on digital (jpg) images.
+
 <br>
 <p align="center">
-  <img height="250" src="Screenshot.png">
+  <img height="300" src="Screenshot.png">
 </p>
 
-* This repository provides an R package called **PatchProcess** to perform **Fragmentation** and **Syntax analysis** on digital (jpg) images.
+
 
 ## Installation
  
@@ -25,11 +27,6 @@ R CMD INSTALL PatchProcess
 ./PatchProcess/tests/test.R
 ```
 
-
-* The package along with the files architecture were created using the following command <br/>
-```bash
-Rcpp.package.skeleton("PatchProcess", code_files = "PatchProcess.R")
-```
 
 ## License
 

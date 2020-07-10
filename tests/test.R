@@ -10,6 +10,7 @@ options(guiToolkit="RGtk2")
 
 library(PatchProcess34)
 
+# don't forget to change the path to your local repository
 setwd("/home/gautier/Dropbox/THESE/PatchProcess34/images/")
 PatchProcessWidget()
 
